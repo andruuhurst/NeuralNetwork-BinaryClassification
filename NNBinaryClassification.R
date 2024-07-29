@@ -1,15 +1,49 @@
+
+dir.create("C:/Users/Andrew Hurst/Documents/R/win-library/4.4", showWarnings = FALSE, recursive = TRUE)
+.libPaths("C:/Users/Andrew Hurst/Documents/R/win-library/4.4")
+if (!requireNamespace("reticulate", quietly = TRUE)) {
+  install.packages("reticulate")
+}
+library(reticulate)
+
 #### install tensorflow ######
 install.packages("tensorflow")
 
+if (!requireNamespace("tensorflow", quietly = TRUE)) {
+  install.packages("tensorflow")
+}
+
 library(tensorflow)
-install_tensorflow()
 
 #### install keras ######
-install.packages("keras")
+install.packages("keras3")
+library(keras3)
 
-library(keras)
 
-#### download spam data set #####
+#install.packages("keras")
+
+#if (!requireNamespace("keras", quietly = TRUE)) {
+#  install.packages("keras")
+#}
+
+#library(keras)
+
+use_python("C:/Python311/python.exe", required = TRUE)
+install_tensorflow()
+install_keras()
+
+
+##### install data.table #####
+install.packages("data.table")
+
+if (!requireNamespace("data.table", quietly = TRUE)) {
+  install.packages("data.table")
+}
+
+library(data.table)
+
+
+#### spam data set #####
 if(!file.exists("spam.data")){
   download.file(
     "https://web.stanford.edu/~hastie/ElemStatLearn/datasets/spam.data",
@@ -17,10 +51,9 @@ if(!file.exists("spam.data")){
 }
 
 spam.dt <- data.table::fread("spam.data")
-
+head(spam.dt)
 label.col <- ncol(spam.dt)
 y <- array(spam.dt[[label.col]], nrow(spam.dt))
-
 set.seed(1)
 fold.vec <- sample(rep(1:5, l=nrow(spam.dt)))
 test.fold <- 1
@@ -37,13 +70,64 @@ X.test.arr <- array(X.test.mat , dim(X.test.mat))
 y.train <- y[is.train]
 y.test <- y[is.test]
 
+
+######## deg count data set ########
+getup.dt <- data.table::fread("C:/Users/Andrew Hurst/Development/R_workspace/NeuralNetwork-BinaryClassification/deg.up_counts.csv")
+getdown.dt <- data.table::fread("C:/Users/Andrew Hurst/Development/R_workspace/NeuralNetwork-BinaryClassification/deg.down_counts.csv")
+meta.dt <- data.table::fread("C:/Users/Andrew Hurst/Development/R_workspace/NeuralNetwork-BinaryClassification/metadata.csv")
+head(getup.dt)
+
+
+### Observations format ###
+X.dt <- rbind(getup.dt, getdown.dt)
+
+x.colnames <- X.dt[[1]]
+print(x.colnames)
+x.rownames <- colnames(X.dt)
+print(x.rownames)
+
+X.mat <- as.matrix(X.dt)
+X.mat <- t(X.mat)
+X.df <- as.data.frame(X.mat)
+colnames(X.df) <- X.df[1,]
+X.df <- X.df[-1,]
+
+
+### labels ###
+y <- meta.dt[["recur"]]
+
+
+### X + y ###
+gene.df <-  cbind(X.df, y)
+label.col <- ncol(gene.df)
+
+gene.dt <- as.data.table(gene.df)
+
+## convert to numeric ##
+gene.dt <- gene.dt[, lapply(.SD, function(x) suppressWarnings(as.numeric(x)))]
+
+set.seed(1)
+fold.vec <- sample(rep(1:5, l=nrow(gene.dt)))
+test.fold <- 1
+is.test <- fold.vec == test.fold
+is.train <- !is.test
+
+X.sc <- scale(gene.dt[, -label.col, with=FALSE])
+X.train.mat <- X.sc[is.train,]
+X.test.mat <- X.sc[is.test,]
+X.train.arr <- array(X.train.mat , dim(X.train.mat))
+X.test.arr <- array(X.test.mat , dim(X.test.mat))
+
+y.train <- y[is.train]
+y.test <- y[is.test]
+
+
 ######## Neural Network : n.hidden_units ######
 
 hidden.unit.metrics.list <- list()
 for( n.hidden.units in c( 10 , 100 , 1000)){
-      
-    model <- keras_model_sequential() %>%
-      layer_flatten( input_shape = ncol(X.train.mat))  %>%                                  # input layer
+  
+  model <- keras_model_sequential(input_shape = ncol(X.train.mat)) %>%                       # input layer
       layer_dense(units = n.hidden.units , activation = "sigmoid" , use_bias = FALSE ) %>%  # hidden layer
       layer_dense(units= 1 , activation = "sigmoid", use_bias = FALSE )                     # ouput layer
     
@@ -149,7 +233,7 @@ min.val.loss.dt <- do.call(rbind, min.val.loss.dt.list)
   #### 10 hidden units with best epoch : 100 #####
   model <- keras_model_sequential() %>%
     layer_flatten( input_shape = ncol(X.train.mat))  %>%                                  # input layer
-    layer_dense(units = 10 , activation = "sigmoid" , use_bias = FALSE ) %>%  # hidden layer
+    layer_dense(units = 10 , activation = "sigmoid" , use_bias = FALSE ) %>%              # hidden layer
     layer_dense(units= 1 , activation = "sigmoid", use_bias = FALSE )                     # ouput layer
   
   model %>% 
