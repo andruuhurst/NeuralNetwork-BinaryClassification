@@ -1,6 +1,12 @@
 
-dir.create("C:/Users/Andrew Hurst/Documents/R/win-library/4.4", showWarnings = FALSE, recursive = TRUE)
-.libPaths("C:/Users/Andrew Hurst/Documents/R/win-library/4.4")
+# create dir in case directory not writable
+dir.create("C:/Users/<user name>/Documents/R/win-library/4.4", showWarnings = FALSE, recursive = TRUE)
+.libPaths("C:/Users/<user name>/Documents/R/win-library/4.4")
+
+#### install reticulate ####
+# used for traceback
+install.packages("reticulate")
+
 if (!requireNamespace("reticulate", quietly = TRUE)) {
   install.packages("reticulate")
 }
@@ -28,9 +34,16 @@ library(keras3)
 
 #library(keras)
 
+
+
+#### set up virtual env ###
+
+### point to python exe location ###
+# you can find in terminal with "where python" command
 use_python("C:/Python311/python.exe", required = TRUE)
 install_tensorflow()
 install_keras()
+
 
 
 ##### install data.table #####
@@ -72,9 +85,9 @@ y.test <- y[is.test]
 
 
 ######## deg count data set ########
-getup.dt <- data.table::fread("C:/Users/Andrew Hurst/Development/R_workspace/NeuralNetwork-BinaryClassification/deg.up_counts.csv")
-getdown.dt <- data.table::fread("C:/Users/Andrew Hurst/Development/R_workspace/NeuralNetwork-BinaryClassification/deg.down_counts.csv")
-meta.dt <- data.table::fread("C:/Users/Andrew Hurst/Development/R_workspace/NeuralNetwork-BinaryClassification/metadata.csv")
+getup.dt <- data.table::fread("deg.up_counts.csv")
+getdown.dt <- data.table::fread("deg.down_counts.csv")
+meta.dt <- data.table::fread("metadata.csv")
 head(getup.dt)
 
 
@@ -127,7 +140,7 @@ y.test <- y[is.test]
 hidden.unit.metrics.list <- list()
 for( n.hidden.units in c( 10 , 100 , 1000)){
   
-  model <- keras_model_sequential(input_shape = ncol(X.train.mat)) %>%                       # input layer
+  model <- keras_model_sequential(input_shape = ncol(X.train.mat)) %>%                      # input layer
       layer_dense(units = n.hidden.units , activation = "sigmoid" , use_bias = FALSE ) %>%  # hidden layer
       layer_dense(units= 1 , activation = "sigmoid", use_bias = FALSE )                     # ouput layer
     
@@ -231,8 +244,7 @@ min.val.loss.dt <- do.call(rbind, min.val.loss.dt.list)
  train.min.dt.list <- list()
 
   #### 10 hidden units with best epoch : 100 #####
-  model <- keras_model_sequential() %>%
-    layer_flatten( input_shape = ncol(X.train.mat))  %>%                                  # input layer
+model <- keras_model_sequential(input_shape = ncol(X.train.mat)) %>%                      # input layer
     layer_dense(units = 10 , activation = "sigmoid" , use_bias = FALSE ) %>%              # hidden layer
     layer_dense(units= 1 , activation = "sigmoid", use_bias = FALSE )                     # ouput layer
   
